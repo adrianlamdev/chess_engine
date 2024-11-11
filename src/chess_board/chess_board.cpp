@@ -26,7 +26,7 @@ void ChessBoard::reset() {
   blackQueens = 0x0800000000000000;
   blackKing = 0x1000000000000000;
 
-  // mailbox representation
+  // 8x8 board array
   for (int i = 0; i < 64; i++) {
     board[i] = Piece::Empty;
   }
@@ -110,8 +110,8 @@ void ChessBoard::display() const {
   }
   std::cout << "  a b c d e f g h" << std::endl;
 
-  // Display raw mailbox values
-  std::cout << "\nMailbox values:\n";
+  // Display raw 8x8 values
+  std::cout << "\n8x8 values:\n";
   for (int rank = 7; rank >= 0; rank--) {
     std::cout << (rank + 1) << " ";
     for (int file = 0; file < 8; file++) {
