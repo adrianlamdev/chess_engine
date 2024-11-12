@@ -29,4 +29,16 @@ int main() {
 
   std::cout << "Bishop mask on c1:\n";
   board.displayBitboard(getBishopMask(2));
+
+  std::cout << "Bishop mask on a1:\n";
+  board.displayBitboard(getBishopMask(0));
+
+  std::cout << "Bishop mask on d4:\n";
+  board.displayBitboard(getBishopMask(27));
+
+  std::cout << "Queen mask on d4:\n";
+  board.displayBitboard(getQueenMask(27));
+
+  std::cout << "Queen mask on a1:\n";
+  board.displayBitboard(getQueenMask(0));
 }

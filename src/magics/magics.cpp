@@ -60,12 +60,60 @@ struct Magic {
   int shift;
 };
 
+uint64_t getQueenMask(int square) {
+  return getBishopMask(square) | getRookMask(square);
+}
+
+uint64_t getQueenAttacks(int square, uint64_t blockers) {
+  return getBishopAttacks(square, blockers) | getRookAttacks(square, blockers);
+}
+
 uint64_t getBishopMask(int square) {
+  uint64_t mask = 0;
   int rank = square / 8;
   int file = square % 8;
-  uint64_t mask = 0;
 
-  mask ^= 1ULL << (rank * 8 + (7 - file)); // remove own square
+  int diag = 0;
+
+  int r = rank;
+  int f = file;
+
+  // northeast
+  while (r < 6 && f < 6) {
+    r++;
+    f++;
+    mask |= 1ULL << (r * 8 + (7 - f));
+  }
+
+  r = rank;
+  f = file;
+
+  // northwest
+  while (r < 6 && f > 0) {
+    r++;
+    f--;
+    mask |= 1ULL << (r * 8 + (7 - f));
+  }
+
+  r = rank;
+  f = file;
+
+  // southeast
+  while (r > 1 && f < 6) {
+    r--;
+    f++;
+    mask |= 1ULL << (r * 8 + (7 - f));
+  }
+
+  r = rank;
+  f = file;
+
+  // southwest
+  while (r > 1 && f > 0) {
+    r--;
+    f--;
+    mask |= 1ULL << (r * 8 + (7 - f));
+  }
 
   return mask;
 }
