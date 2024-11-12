@@ -18,6 +18,12 @@ int main() {
   std::cout << "Rook mask on a1:\n";
   board.displayBitboard(getRookMask(0));
 
+  std::cout << "Rook mask on b8:\n";
+  board.displayBitboard(getRookMask(57));
+
+  std::cout << "Rook mask on h4:\n";
+  board.displayBitboard(getRookMask(39));
+
   std::cout << "Rook mask on d3:\n";
   board.displayBitboard(getRookMask(27));
 

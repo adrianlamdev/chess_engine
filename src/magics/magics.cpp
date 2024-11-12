@@ -75,8 +75,14 @@ uint64_t getRookMask(int square) {
 
   std::cout << "square: " << square << std::endl;
 
-  uint64_t rankMask = 0xFF << (rank * 8);
-  rankMask &= ~0x81 << (rank * 8);
+  uint64_t rankMask = 0xFFULL << (rank * 8);
+  if (rank > 0 && rank < 7) {
+    rankMask &= ~0x81ULL << (rank * 8);
+  } else if (rank == 0) {
+    rankMask &= ~0x1ULL << (rank * 8);
+  } else if (rank == 7) {
+    rankMask &= ~0x80ULL << (rank * 8);
+  }
 
   uint64_t fileMask = 0x0101010101010101ULL << (7 - file);
   fileMask &= ~0xff000000000000ffULL;
