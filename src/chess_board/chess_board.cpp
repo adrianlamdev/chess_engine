@@ -64,15 +64,93 @@ bool ChessBoard::testMove(Move &move) {
   return true;
 };
 
-// TODO: implement this later
-bool ChessBoard::isCheckmate() const {}
+bool ChessBoard::hasInsufficientMaterial() const {
+  uint64_t allPieces = getWhitePieces() | getBlackPieces();
+  int pieceCount = __builtin_popcountll(allPieces);
 
-// TODO: implement this later
-bool ChessBoard::isStalemate() const {
-  if (moves.empty() || halfMoveClock >= 100)
+  // indicates kings only
+  if (pieceCount == 2) {
     return true;
+  }
+
+  // king + bishop vs king || king + knight vs king
+  if (pieceCount == 3) {
+    bool onlyOneBishop =
+        __builtin_popcountll(whiteBishops | blackBishops) == 1 &&
+        __builtin_popcountll(whiteKnights | blackKnights | whiteRooks |
+                             blackRooks | whiteQueens | blackQueens |
+                             whitePawns | blackPawns) == 0;
+    bool onlyOneKnight =
+        __builtin_popcountll(whiteKnights | blackKnights) == 1 &&
+        __builtin_popcountll(whiteBishops | blackBishops | whiteRooks |
+                             blackRooks | whiteQueens | blackQueens |
+                             whitePawns | blackPawns) == 0;
+    return onlyOneBishop || onlyOneKnight;
+  }
+
+  // King + bishop vs king + bishop (same colored squares)
+  if (pieceCount == 4 &&
+      __builtin_popcountll(whiteBishops | blackBishops) == 2 &&
+      __builtin_popcountll(whiteKnights | blackKnights | whiteRooks |
+                           blackRooks | whitePawns | blackPawns | whiteQueens |
+                           blackQueens) == 0) {
+    // Get squares of both bishops
+    int whiteBishopSquare = __builtin_ctzll(whiteBishops);
+    int blackBishopSquare = __builtin_ctzll(blackBishops);
+
+    // Check if bishops are on same colored squares
+    bool whiteSquareWhiteBishop =
+        ((whiteBishopSquare / 8 + whiteBishopSquare % 8) % 2) == 0;
+    bool whiteSquareBlackBishop =
+        ((blackBishopSquare / 8 + blackBishopSquare % 8) % 2) == 0;
+
+    return whiteSquareWhiteBishop == whiteSquareBlackBishop;
+  }
 
   return false;
+}
+
+bool ChessBoard::isCheckmate() const {
+  if (!isInCheck(sideToMove)) {
+    return false;
+  }
+
+  ChessBoard tempBoard = *this;
+  tempBoard.generateMoves();
+
+  for (Move move : tempBoard.moves) {
+    ChessBoard testBoard = tempBoard;
+    if (testBoard.makeMove(move)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool ChessBoard::isStalemate() const {
+  if (isInCheck(sideToMove)) {
+    return false;
+  }
+
+  bool fiftyMoveRule = halfMoveClock >= 100;
+  bool insufficientMaterial = hasInsufficientMaterial();
+
+  if (fiftyMoveRule || insufficientMaterial) {
+    return true;
+  }
+
+  ChessBoard tempBoard = *this;
+  tempBoard.generateMoves();
+
+  for (Move move : tempBoard.moves) {
+    ChessBoard testBoard = tempBoard;
+    if (testBoard.makeMove(move)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 bool ChessBoard::isMoveLegal(Move &move) {

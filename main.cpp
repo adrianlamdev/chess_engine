@@ -25,6 +25,14 @@ int main() {
 
     Move move = Move{(uint8_t)from, (uint8_t)to};
     if (board.makeMove(move)) {
+      if (board.isCheckmate()) {
+        std::cout << "Checkmate! " << (board.sideToMove ? "White" : "Black")
+                  << " wins!\n";
+        break;
+      } else if (board.isStalemate()) {
+        std::cout << "Game drawn by stalemate!\n";
+        break;
+      }
       board.display();
     }
   }
