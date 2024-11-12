@@ -1,4 +1,5 @@
 #include "chess_board.h"
+#include "../magics/magics.h"
 #include <cstdint>
 #include <iostream>
 
@@ -17,7 +18,7 @@ void ChessBoard::displayBitboard(uint64_t bitboard) const {
   for (int rank = 7; rank >= 0; rank--) {
     std::cout << rank + 1 << "  ";
     for (int file = 0; file < 8; file++) {
-      int square = rank * 8 + file;
+      int square = rank * 8 + (7 - file);
       if (bitboard & (1ULL << square)) {
         std::cout << "x ";
       } else {
@@ -35,7 +36,7 @@ void ChessBoard::displayAttacks(int square, uint64_t attacks,
   for (int rank = 7; rank >= 0; rank--) {
     std::cout << (rank + 1) << " ";
     for (int file = 0; file < 8; file++) {
-      int sq = rank * 8 + file;
+      int sq = rank * 8 + (7 - file);
       uint64_t bit = 1ULL << sq;
 
       if (sq == square)
@@ -58,7 +59,7 @@ void ChessBoard::displayKnightAttacks(int square) const {
   for (int rank = 7; rank >= 0; rank--) {
     std::cout << (rank + 1) << " ";
     for (int file = 0; file < 8; file++) {
-      int sq = rank * 8 + file;
+      int sq = rank * 8 + (7 - file);
       uint64_t bit = 1ULL << sq;
 
       if (sq == square)
@@ -71,6 +72,23 @@ void ChessBoard::displayKnightAttacks(int square) const {
     std::cout << '\n';
   }
   std::cout << "  a b c d e f g h" << std::endl;
+}
+
+void ChessBoard::generateRookMoves(uint64_t rooks, uint64_t ownPieces,
+                                   uint64_t enemyPieces) {
+  while (rooks) {
+    int square = __builtin_ctzll(rooks);
+    uint64_t attacks = getRookAttacks(square, ownPieces | enemyPieces);
+    attacks &= ~ownPieces; // Remove squares occupied by own pieces
+
+    while (attacks) {
+      int to = __builtin_ctzll(attacks);
+      moves.push_back(Move{(uint8_t)square, (uint8_t)to});
+      attacks &= attacks - 1;
+    }
+
+    rooks &= rooks - 1;
+  }
 }
 
 void ChessBoard::initKnightAttacks() {
@@ -226,6 +244,8 @@ void ChessBoard::generateMoves() {
                       ownPieces, enemyPieces);
   generatePawnMoves(sideToMove, (sideToMove == 0) ? whitePawns : blackPawns,
                     ownPieces, enemyPieces);
+  generateRookMoves((sideToMove == 0) ? whiteRooks : blackRooks, ownPieces,
+                    enemyPieces);
 }
 
 void ChessBoard::reset() {
@@ -310,7 +330,7 @@ void ChessBoard::display() const {
   for (int rank = 7; rank >= 0; rank--) {
     std::cout << (rank + 1) << " ";
     for (int file = 0; file < 8; file++) {
-      int square = rank * 8 + file;
+      int square = rank * 8 + (7 - file);
       uint64_t bit = 1ULL << square;
       char piece = '.';
       if (whitePawns & bit)
@@ -348,7 +368,7 @@ void ChessBoard::display() const {
   for (int rank = 7; rank >= 0; rank--) {
     std::cout << (rank + 1) << " ";
     for (int file = 0; file < 8; file++) {
-      int square = rank * 8 + file;
+      int square = rank * 8 + (7 - file);
       std::cout << int(board[square]) << "\t";
     }
     std::cout << '\n';

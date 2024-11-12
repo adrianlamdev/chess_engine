@@ -106,6 +106,16 @@ private:
                          uint64_t enemyPieces);
 
   /**
+   * Generates pseudo-legal rook moves for the given rooks.
+   *
+   * @param rooks Bitboard of rook positions to generate moves for
+   * @param ownPieces Bitboard of all friendly pieces (for blocking)
+   * @param enemyPieces Bitboard of all enemy pieces (for captures)
+   */
+  void generateRookMoves(uint64_t rooks, uint64_t ownPieces,
+                         uint64_t enemyPieces);
+
+  /**
    * Initializes pawn attack lookup table for both colors.
    */
   void initPawnAttacks();
