@@ -79,10 +79,10 @@ uint64_t getBishopMask(int square) {
   int f = file;
 
   // northeast
-  while (r < 6 && f < 6) {
+  while (r < 6 && f < 7) {
     r++;
     f++;
-    mask |= 1ULL << (r * 8 + (7 - f));
+    mask |= 1ULL << (r * 8 + f);
   }
 
   r = rank;
@@ -92,17 +92,17 @@ uint64_t getBishopMask(int square) {
   while (r < 6 && f > 0) {
     r++;
     f--;
-    mask |= 1ULL << (r * 8 + (7 - f));
+    mask |= 1ULL << (r * 8 + f);
   }
 
   r = rank;
   f = file;
 
   // southeast
-  while (r > 1 && f < 6) {
+  while (r > 1 && f < 7) {
     r--;
     f++;
-    mask |= 1ULL << (r * 8 + (7 - f));
+    mask |= 1ULL << (r * 8 + f);
   }
 
   r = rank;
@@ -112,7 +112,7 @@ uint64_t getBishopMask(int square) {
   while (r > 1 && f > 0) {
     r--;
     f--;
-    mask |= 1ULL << (r * 8 + (7 - f));
+    mask |= 1ULL << (r * 8 + f);
   }
 
   return mask;
@@ -134,25 +134,25 @@ uint64_t getRookMask(int square) {
   int file = square % 8;
   uint64_t mask = 0;
 
-  std::cout << "square: " << square << std::endl;
-
   uint64_t rankMask = 0xFFULL << (rank * 8);
-  if (rank > 0 && rank < 7) {
-    rankMask &= ~0x81ULL << (rank * 8);
-  } else if (rank == 0) {
-    rankMask &= ~0x1ULL << (rank * 8);
-  } else if (rank == 7) {
-    rankMask &= ~0x80ULL << (rank * 8);
-  }
+  // Remove the edge squares on the rank if they exist
+  if (file > 0)
+    rankMask &= ~(1ULL << (rank * 8));
+  if (file < 7)
+    rankMask &= ~(1ULL << (rank * 8 + 7));
 
-  uint64_t fileMask = 0x0101010101010101ULL << (7 - file);
-  fileMask &= ~0xff000000000000ffULL;
+  uint64_t fileMask = 0x0101010101010101ULL << file;
+  // Remove the edge squares on the file if they exist
+  if (rank > 0)
+    fileMask &= ~(1ULL << file);
+  if (rank < 7)
+    fileMask &= ~(1ULL << (56 + file));
 
   mask = rankMask | fileMask;
-  mask ^= 1ULL << (rank * 8 + (7 - file)); // remove own square
+  mask ^= 1ULL << square; // Remove own square
 
   return mask;
-};
+}
 
 uint64_t getRookAttacks(int square, uint64_t blockers) {
   uint64_t mask = getRookMask(square);

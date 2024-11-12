@@ -7,13 +7,17 @@ int main() {
   board.display();
 
   // testing
-  board.displayKnightAttacks(7); // h1 corner
-  board.displayKnightAttacks(10);
-  board.displayKnightAttacks(34); // middle of board
-                                  //
-  board.displayPawnAttacks(0, 8); // a2
-  board.displayPawnAttacks(0, 9);
-  board.displayPawnAttacks(1, 54);
+  /*board.displayKnightAttacks(7); // h1 corner*/
+  /*board.displayKnightAttacks(10);*/
+  /*board.displayKnightAttacks(34); // middle of board*/
+  /*                                //*/
+  /*board.displayPawnAttacks(0, 8); // a2*/
+  /*board.displayPawnAttacks(0, 9);*/
+  /*board.displayPawnAttacks(1, 54);*/
+
+  /*board.displayKingAttacks(4);  // e1*/
+  /*board.displayKingAttacks(0);  // a1*/
+  /*board.displayKingAttacks(63); // h8*/
 
   std::cout << "Rook mask on a1:\n";
   board.displayBitboard(getRookMask(0));

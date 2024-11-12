@@ -77,7 +77,7 @@ private:
   // Pre-computed attack lookup tables
   uint64_t knight_attacks[64];  /// Knight move patterns for each square
   uint64_t pawn_attacks[2][64]; /// Pawn attacks for each color/square
-
+  uint64_t king_attacks[64];
   /**
    * Validates consistency between bitboard and 8x8 array representations.
    * TODO: Implement validation logic
@@ -116,6 +116,29 @@ private:
                          uint64_t enemyPieces);
 
   /**
+   * Generates pseudo-legal bishop moves for the given bishops.
+   *
+   * @param bishops Bitboard of bishop positions to generate moves for
+   * @param ownPieces Bitboard of all friendly pieces (for blocking)
+   * @param enemyPieces Bitboard of all enemy pieces (for captures
+   */
+  void generateBishopMoves(uint64_t bishops, uint64_t ownPieces,
+                           uint64_t enemyPieces);
+
+  /**
+   * Generates pseudo-legal queen moves for the given queens.
+   *
+   * @param queens Bitboard of queen positions to generate moves for
+   * @param ownPieces Bitboard of all friendly pieces (for blocking)
+   * @param enemyPieces Bitboard of all enemy pieces (for captures)
+   */
+  void generateQueenMoves(uint64_t queens, uint64_t ownPieces,
+                          uint64_t enemyPieces);
+
+  void generateKingMoves(uint64_t king, uint64_t ownPieces,
+                         uint64_t enemyPieces);
+
+  /**
    * Initializes pawn attack lookup table for both colors.
    */
   void initPawnAttacks();
@@ -124,6 +147,11 @@ private:
    * Initializes knight movement lookup table.
    */
   void initKnightAttacks();
+
+  /**
+   * Initializes king movement lookup table.
+   */
+  void initKingAttacks();
 
 public:
   /**
@@ -166,6 +194,12 @@ public:
    * @param square Square index (0-63) to show moves from
    */
   void displayKnightAttacks(int square) const;
+
+  /**
+   * Shows all legal king moves from given square.
+   * @param square Square index (0-63) to show moves from
+   */
+  void displayKingAttacks(int square) const;
 
   /**
    * Shows all legal pawn moves for given side from square.

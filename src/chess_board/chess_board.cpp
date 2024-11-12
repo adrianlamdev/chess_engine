@@ -9,6 +9,7 @@ ChessBoard::ChessBoard() {
 }
 
 void ChessBoard::initAttacks() {
+  initKingAttacks();
   initKnightAttacks();
   initPawnAttacks();
 }
@@ -18,7 +19,7 @@ void ChessBoard::displayBitboard(uint64_t bitboard) const {
   for (int rank = 7; rank >= 0; rank--) {
     std::cout << rank + 1 << "  ";
     for (int file = 0; file < 8; file++) {
-      int square = rank * 8 + (7 - file);
+      int square = rank * 8 + file;
       if (bitboard & (1ULL << square)) {
         std::cout << "x ";
       } else {
@@ -36,7 +37,7 @@ void ChessBoard::displayAttacks(int square, uint64_t attacks,
   for (int rank = 7; rank >= 0; rank--) {
     std::cout << (rank + 1) << " ";
     for (int file = 0; file < 8; file++) {
-      int sq = rank * 8 + (7 - file);
+      int sq = rank * 8 + file;
       uint64_t bit = 1ULL << sq;
 
       if (sq == square)
@@ -51,6 +52,28 @@ void ChessBoard::displayAttacks(int square, uint64_t attacks,
   std::cout << "  a b c d e f g h\n";
 }
 
+void ChessBoard::displayKingAttacks(int square) const {
+  std::cout << "King attacks from square " << square << ":\n";
+  uint64_t attacks = king_attacks[square];
+
+  for (int rank = 7; rank >= 0; rank--) {
+    std::cout << (rank + 1) << " ";
+    for (int file = 0; file < 8; file++) {
+      int sq = rank * 8 + file;
+      uint64_t bit = 1ULL << sq;
+
+      if (sq == square)
+        std::cout << "K ";
+      else if (attacks & bit)
+        std::cout << "x ";
+      else
+        std::cout << ". ";
+    }
+    std::cout << '\n';
+  }
+  std::cout << "  a b c d e f g h" << std::endl;
+}
+
 void ChessBoard::displayKnightAttacks(int square) const {
   std::cout << "Knight attacks from square " << square << ":\n";
   uint64_t attacks = knight_attacks[square];
@@ -59,7 +82,7 @@ void ChessBoard::displayKnightAttacks(int square) const {
   for (int rank = 7; rank >= 0; rank--) {
     std::cout << (rank + 1) << " ";
     for (int file = 0; file < 8; file++) {
-      int sq = rank * 8 + (7 - file);
+      int sq = rank * 8 + file;
       uint64_t bit = 1ULL << sq;
 
       if (sq == square)
@@ -72,6 +95,23 @@ void ChessBoard::displayKnightAttacks(int square) const {
     std::cout << '\n';
   }
   std::cout << "  a b c d e f g h" << std::endl;
+}
+
+void ChessBoard::generateBishopMoves(uint64_t bishops, uint64_t ownPieces,
+                                     uint64_t enemyPieces) {
+  while (bishops) {
+    int square = __builtin_ctzll(bishops);
+    uint64_t attacks = getBishopAttacks(square, ownPieces | enemyPieces);
+    attacks &= ~ownPieces; // Remove squares occupied by own pieces
+
+    while (attacks) {
+      int to = __builtin_ctzll(attacks);
+      moves.push_back(Move{(uint8_t)square, (uint8_t)to});
+      attacks &= attacks - 1;
+    }
+
+    bishops &= bishops - 1;
+  }
 }
 
 void ChessBoard::generateRookMoves(uint64_t rooks, uint64_t ownPieces,
@@ -88,6 +128,58 @@ void ChessBoard::generateRookMoves(uint64_t rooks, uint64_t ownPieces,
     }
 
     rooks &= rooks - 1;
+  }
+}
+
+void ChessBoard::generateQueenMoves(uint64_t queens, uint64_t ownPieces,
+                                    uint64_t enemyPieces) {
+  while (queens) {
+    int square = __builtin_ctzll(queens);
+    uint64_t attacks = getRookAttacks(square, ownPieces | enemyPieces) |
+                       getBishopAttacks(square, ownPieces | enemyPieces);
+    attacks &= ~ownPieces;
+
+    while (attacks) {
+      int to = __builtin_ctzll(attacks);
+      moves.push_back(Move{(uint8_t)square, (uint8_t)to});
+      attacks &= attacks - 1;
+    }
+
+    queens &= queens - 1;
+  }
+}
+
+void ChessBoard::initKingAttacks() {
+  for (int sq = 0; sq < 64; sq++) {
+    uint64_t attacks = 0;
+    int rank = sq / 8;
+    int file = sq % 8;
+
+    // Up
+    if (rank < 7) {
+      attacks |= 1ULL << (sq + 8); // up
+      if (file > 0)
+        attacks |= 1ULL << (sq + 7); // Up
+      if (file < 7)
+        attacks |= 1ULL << (sq + 9); // Up-left
+    }
+
+    // Same rank
+    if (file > 0)
+      attacks |= 1ULL << (sq - 1); // Left
+    if (file < 7)
+      attacks |= 1ULL << (sq + 1); // Right
+
+    // Down
+    if (rank > 0) {
+      attacks |= 1ULL << (sq - 8); // Down
+      if (file > 0)
+        attacks |= 1ULL << (sq - 9); // Down-left
+      if (file < 7)
+        attacks |= 1ULL << (sq - 7); // Down-right
+    }
+
+    king_attacks[sq] = attacks;
   }
 }
 
@@ -214,6 +306,25 @@ void ChessBoard::generatePawnMoves(uint8_t side, uint64_t pawns,
   }
 }
 
+void ChessBoard::generateKingMoves(uint64_t king, uint64_t ownPieces,
+                                   uint64_t enemyPieces) {
+  while (king != 0) {
+    uint8_t from = __builtin_ctzll(king); // get index of least significant bit
+
+    uint64_t destinations = king_attacks[from];
+    destinations &= ~ownPieces; // remove own pieces
+
+    while (destinations != 0) {
+      uint8_t to = __builtin_ctzll(destinations);
+      moves.push_back(Move{from, to});
+      destinations &= destinations - 1;
+    }
+
+    // clear bit
+    king &= king - 1;
+  }
+}
+
 void ChessBoard::generateKnightMoves(uint64_t knights, uint64_t ownPieces,
                                      uint64_t enemyPieces) {
   while (knights != 0) {
@@ -246,6 +357,12 @@ void ChessBoard::generateMoves() {
                     ownPieces, enemyPieces);
   generateRookMoves((sideToMove == 0) ? whiteRooks : blackRooks, ownPieces,
                     enemyPieces);
+  generateBishopMoves((sideToMove == 0) ? whiteBishops : blackBishops,
+                      ownPieces, enemyPieces);
+  generateQueenMoves((sideToMove == 0) ? whiteQueens : blackQueens, ownPieces,
+                     enemyPieces);
+  generateKingMoves((sideToMove == 0) ? whiteKing : blackKing, ownPieces,
+                    enemyPieces);
 }
 
 void ChessBoard::reset() {
@@ -254,54 +371,49 @@ void ChessBoard::reset() {
   halfMoveClock = 0;
   fullMoveNumber = 1;
 
-  // bitboard representation
-  // White pieces on ranks 1-2 (bottom)
-  whitePawns = 0x000000000000FF00;
-  whiteKnights = 0x0000000000000042;
-  whiteBishops = 0x0000000000000024;
-  whiteRooks = 0x0000000000000081;
-  whiteQueens = 0x0000000000000008;
-  whiteKing = 0x0000000000000010;
+  // White pieces (rank 1-2)
+  whitePawns = 0x000000000000FF00ULL;
+  whiteKnights = 0x0000000000000042ULL;
+  whiteBishops = 0x0000000000000024ULL;
+  whiteRooks = 0x0000000000000081ULL;
+  whiteQueens = 0x0000000000000008ULL;
+  whiteKing = 0x0000000000000010ULL;
 
-  // Black pieces on ranks 7-8 (top)
-  blackPawns = 0x00FF000000000000;
-  blackKnights = 0x4200000000000000;
-  blackBishops = 0x2400000000000000;
-  blackRooks = 0x8100000000000000;
-  blackQueens = 0x0800000000000000;
-  blackKing = 0x1000000000000000;
+  // Black pieces (rank 7-8)
+  blackPawns = 0x00FF000000000000ULL;
+  blackKnights = 0x4200000000000000ULL;
+  blackBishops = 0x2400000000000000ULL;
+  blackRooks = 0x8100000000000000ULL;
+  blackQueens = 0x0800000000000000ULL;
+  blackKing = 0x1000000000000000ULL;
 
-  // 8x8 board array
+  // Initialize array representation
   for (int i = 0; i < 64; i++) {
     board[i] = Piece::Empty;
   }
 
-  // first rank
+  // First rank (white pieces)
   board[0] = Piece::WhiteRook;
   board[1] = Piece::WhiteKnight;
   board[2] = Piece::WhiteBishop;
-  board[3] = Piece::WhiteQueen;
-  board[4] = Piece::WhiteKing;
+  board[3] = Piece::WhiteQueen; // Changed order
+  board[4] = Piece::WhiteKing;  // Changed order
   board[5] = Piece::WhiteBishop;
   board[6] = Piece::WhiteKnight;
   board[7] = Piece::WhiteRook;
 
-  // second rank
-  for (int i = 8; i < 16; i++) {
-    board[i] = Piece::WhitePawn;
-  }
+  // Rest unchanged as array indexes already match the standard convention
+  for (int i = 8; i < 16; i++)
+    board[i] = Piece::WhitePawn; // 2nd rank
+  for (int i = 48; i < 56; i++)
+    board[i] = Piece::BlackPawn; // 7th rank
 
-  // seventh rank
-  for (int i = 48; i < 56; i++) {
-    board[i] = Piece::BlackPawn;
-  }
-
-  // eighth rank
+  // Eighth rank (black pieces)
   board[56] = Piece::BlackRook;
   board[57] = Piece::BlackKnight;
   board[58] = Piece::BlackBishop;
-  board[59] = Piece::BlackQueen;
-  board[60] = Piece::BlackKing;
+  board[59] = Piece::BlackQueen; // Changed order
+  board[60] = Piece::BlackKing;  // Changed order
   board[61] = Piece::BlackBishop;
   board[62] = Piece::BlackKnight;
   board[63] = Piece::BlackRook;
@@ -330,7 +442,7 @@ void ChessBoard::display() const {
   for (int rank = 7; rank >= 0; rank--) {
     std::cout << (rank + 1) << " ";
     for (int file = 0; file < 8; file++) {
-      int square = rank * 8 + (7 - file);
+      int square = rank * 8 + file; // Removed (7 - file)
       uint64_t bit = 1ULL << square;
       char piece = '.';
       if (whitePawns & bit)
@@ -368,10 +480,10 @@ void ChessBoard::display() const {
   for (int rank = 7; rank >= 0; rank--) {
     std::cout << (rank + 1) << " ";
     for (int file = 0; file < 8; file++) {
-      int square = rank * 8 + (7 - file);
+      int square = rank * 8 + file; // Removed (7 - file)
       std::cout << int(board[square]) << "\t";
     }
     std::cout << '\n';
   }
   std::cout << "  a b c d e f g h" << std::endl;
-};
+}
