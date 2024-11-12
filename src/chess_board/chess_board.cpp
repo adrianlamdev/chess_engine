@@ -12,6 +12,23 @@ void ChessBoard::initAttacks() {
   initPawnAttacks();
 }
 
+void ChessBoard::displayBitboard(uint64_t bitboard) const {
+  std::cout << "\n";
+  for (int rank = 7; rank >= 0; rank--) {
+    std::cout << rank + 1 << "  ";
+    for (int file = 0; file < 8; file++) {
+      int square = rank * 8 + file;
+      if (bitboard & (1ULL << square)) {
+        std::cout << "x ";
+      } else {
+        std::cout << ". ";
+      }
+    }
+    std::cout << "\n";
+  }
+  std::cout << "\n   a b c d e f g h\n\n";
+}
+
 // TODO: implement this later
 void ChessBoard::displayAttacks(int square, uint64_t attacks,
                                 char piece) const {

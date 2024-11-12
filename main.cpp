@@ -1,4 +1,6 @@
 #include "./src/chess_board/chess_board.h"
+#include "./src/magics/magics.h"
+#include <iostream>
 
 int main() {
   ChessBoard board = ChessBoard();
@@ -12,4 +14,10 @@ int main() {
   board.displayPawnAttacks(0, 8); // a2
   board.displayPawnAttacks(0, 9);
   board.displayPawnAttacks(1, 54);
+
+  std::cout << "Rook mask on a1:\n";
+  board.displayBitboard(getRookMask(0));
+
+  std::cout << "Rook mask on c4:\n";
+  board.displayBitboard(getRookMask(18));
 }

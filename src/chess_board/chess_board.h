@@ -41,7 +41,7 @@ enum class Piece : uint8_t {
 /**
  * Represents a chess board using both bitboard and 8x8 array representations.
  * Maintains move generation lookup tables and game state.
- * 
+ *
  * Key features:
  * - Dual board representation (bitboards + 8x8 array)
  * - Pre-computed attack tables for pawns and knights
@@ -54,7 +54,7 @@ private:
   uint64_t whitePawns;
   uint64_t whiteKnights;
   uint64_t whiteBishops;
-  uint64_t whiteRooks; 
+  uint64_t whiteRooks;
   uint64_t whiteQueens;
   uint64_t whiteKing;
   uint64_t blackPawns;
@@ -65,18 +65,18 @@ private:
   uint64_t blackKing;
 
   // Game state variables
-  uint8_t enPassantSquare;   /// Target square for en passant captures
-  bool sideToMove;           /// false = white, true = black
-  std::string castlingRights;/// "KQkq" format - uppercase for white
-  uint8_t halfMoveClock;     /// Counts moves for 50-move rule
-  uint16_t fullMoveNumber;   /// Incremented after black's move
+  uint8_t enPassantSquare;    /// Target square for en passant captures
+  bool sideToMove;            /// false = white, true = black
+  std::string castlingRights; /// "KQkq" format - uppercase for white
+  uint8_t halfMoveClock;      /// Counts moves for 50-move rule
+  uint16_t fullMoveNumber;    /// Incremented after black's move
 
   std::array<Piece, 64> board; /// 8x8 array representation
   std::vector<Move> moves;     /// Legal moves in current position
 
   // Pre-computed attack lookup tables
-  uint64_t knight_attacks[64];    /// Knight move patterns for each square
-  uint64_t pawn_attacks[2][64];   /// Pawn attacks for each color/square
+  uint64_t knight_attacks[64];  /// Knight move patterns for each square
+  uint64_t pawn_attacks[2][64]; /// Pawn attacks for each color/square
 
   /**
    * Validates consistency between bitboard and 8x8 array representations.
@@ -86,7 +86,7 @@ private:
 
   /**
    * Generates pseudo-legal knight moves for the given knights.
-   * 
+   *
    * @param knights Bitboard of knight positions to generate moves for
    * @param ownPieces Bitboard of all friendly pieces (for blocking)
    * @param enemyPieces Bitboard of all enemy pieces (for captures)
@@ -96,7 +96,7 @@ private:
 
   /**
    * Generates pseudo-legal pawn moves for the given side.
-   * 
+   *
    * @param side Color of pawns (0 = white, 1 = black)
    * @param pawns Bitboard of pawn positions to generate moves for
    * @param ownPieces Bitboard of all friendly pieces (for blocking)
@@ -177,6 +177,8 @@ public:
    * Updates internal moves vector.
    */
   void generateMoves();
+
+  void displayBitboard(uint64_t bitboard) const;
 };
 
 #endif
