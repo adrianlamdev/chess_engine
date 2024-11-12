@@ -81,7 +81,6 @@ private:
 
   // Game state variables
   uint8_t enPassantSquare;    /// Target square for en passant captures
-  bool sideToMove;            /// false = white, true = black
   std::string castlingRights; /// "KQkq" format - uppercase for white
   uint8_t halfMoveClock;      /// Counts moves for 50-move rule
   uint16_t fullMoveNumber;    /// Incremented after black's move
@@ -195,7 +194,14 @@ private:
    */
   void initKingAttacks();
 
+  /**
+   * Checks if current position has insufficient material for checkmate.
+   */
+  bool hasInsufficientMaterial() const;
+
 public:
+  bool sideToMove; /// false = white, true = black
+
   /**
    * Constructs a chess board in the standard starting position.
    * Initializes attack tables and resets game state.
