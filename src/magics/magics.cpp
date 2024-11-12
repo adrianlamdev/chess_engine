@@ -3,7 +3,7 @@
 #include <iostream>
 #include <sys/types.h>
 
-const uint64_t BISHOP_MAGICS[64] = {
+uint64_t BISHOP_MAGICS[64] = {
     0x40040844404084ULL,   0x2004208a004208ULL,   0x10190041080202ULL,
     0x108060845042010ULL,  0x581104180800210ULL,  0x2112080446200010ULL,
     0x1080820820060210ULL, 0x3c0808410220200ULL,  0x4050404440404ULL,
@@ -27,7 +27,7 @@ const uint64_t BISHOP_MAGICS[64] = {
     0x28000010020204ULL,   0x6000020202d0240ULL,  0x8918844842082200ULL,
     0x4010011029020020ULL};
 
-const uint64_t ROOK_MAGICS[64] = {
+uint64_t ROOK_MAGICS[64] = {
     0x8a80104000800020ULL, 0x140002000100040ULL,  0x2801880a0017001ULL,
     0x100081001000420ULL,  0x200020010080420ULL,  0x3001c0002010008ULL,
     0x8480008002000100ULL, 0x2080088004402900ULL, 0x800098204000ULL,
@@ -52,13 +52,47 @@ const uint64_t ROOK_MAGICS[64] = {
     0x1004081002402ULL};
 
 uint64_t ROOK_ATTACKS[64][4096];
-uint64_t BISHOP_ATTACKS[64][512];
+uint64_t BISHOP_ATTACKS[64][4096];
 
 struct Magic {
   uint64_t mask;
   uint64_t magic;
   int shift;
 };
+
+static uint64_t generateSlidingAttacks(int square, uint64_t blockers,
+                                       bool isBishop) {
+  uint64_t attacks = 0;
+  int rank = square / 8;
+  int file = square % 8;
+
+  // directions of each sliding piece
+  int bishopDeltas[4][2] = {{1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
+  int rookDeltas[4][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+  int(*deltas)[2] = isBishop ? bishopDeltas : rookDeltas;
+
+  for (int dir = 0; dir < 4; dir++) {
+    int r = rank;
+    int f = file;
+
+    while (true) {
+      r += deltas[dir][0];
+      f += deltas[dir][1];
+
+      if (r < 0 || r > 7 || f < 0 || f > 7)
+        break;
+
+      uint64_t squareMask = 1ULL << (r * 8 + f);
+      attacks |= squareMask;
+
+      if (blockers & squareMask) {
+        break;
+      }
+    }
+  }
+
+  return attacks;
+}
 
 uint64_t getQueenMask(int square) {
   return getBishopMask(square) | getRookMask(square);
@@ -124,10 +158,10 @@ uint64_t getBishopAttacks(int square, uint64_t blockers) {
   uint64_t magic = BISHOP_MAGICS[square];
 
   int shift = 64 - __builtin_popcountll(mask);
-  int index = (blockers * magic) >> shift;
+  int index = (relevantBlockers * magic) >> shift;
 
   return BISHOP_ATTACKS[square][index];
-};
+}
 
 uint64_t getRookMask(int square) {
   int rank = square / 8;
@@ -164,3 +198,51 @@ uint64_t getRookAttacks(int square, uint64_t blockers) {
 
   return ROOK_ATTACKS[square][index];
 };
+
+void initMagicTable(bool isBishop) {
+  uint64_t *magics = isBishop ? BISHOP_MAGICS : ROOK_MAGICS;
+  uint64_t(*attacks)[4096] = isBishop ? BISHOP_ATTACKS : ROOK_ATTACKS;
+
+  std::cout << "Initializing " << (isBishop ? "bishop" : "rook") << " magics\n";
+
+  for (int square = 0; square < 64; square++) {
+    uint64_t mask = isBishop ? getBishopMask(square) : getRookMask(square);
+    int bits = __builtin_popcountll(mask);
+    int n = 1 << bits;
+
+    // Generate all possible blocker combinations for this square
+    for (int i = 0; i < n; i++) {
+      uint64_t blockers = 0;
+      uint64_t m = mask;
+      int j = 0;
+
+      // Convert index to blocker configuration
+      while (m) {
+        int bit = __builtin_ctzll(m);
+        if (i & (1 << j)) {
+          blockers |= 1ULL << bit;
+        }
+        m &= m - 1;
+        j++;
+      }
+
+      // Calculate magic index
+      uint64_t magic = magics[square];
+      int shift = 64 - bits;
+      int index = (blockers * magic) >> shift;
+
+      // Store attack pattern
+      uint64_t attack = generateSlidingAttacks(square, blockers, isBishop);
+      attacks[square][index] = attack;
+    }
+  }
+  std::cout << "Finished initializing " << (isBishop ? "bishop" : "rook")
+            << " magics\n";
+}
+
+void initMagics() {
+  std::cout << "Initializing magics" << std::endl;
+  // init both rook and bishop magics (attack tables)
+  initMagicTable(true);  // bishops
+  initMagicTable(false); // rooks
+}

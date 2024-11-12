@@ -4,8 +4,75 @@
 #include <iostream>
 
 ChessBoard::ChessBoard() {
+  initMagics();
   initAttacks();
   reset();
+}
+
+// TODO: use this later
+bool ChessBoard::isSquareAttacked(int square, bool byWhite) const {
+  uint64_t potentialPawnLocations = pawn_attacks[byWhite ? 0 : 1][square];
+  if (potentialPawnLocations & (byWhite ? whitePawns : blackPawns)) {
+    return true;
+  }
+
+  uint64_t potentialKnightLocations = knight_attacks[square];
+  if (potentialKnightLocations & (byWhite ? whiteKnights : blackKnights)) {
+    return true;
+  }
+
+  uint64_t potentialKingLocations = king_attacks[square];
+  if (potentialKingLocations & (byWhite ? whiteKing : blackKing)) {
+    return true;
+  }
+
+  uint64_t allPieces = getWhitePieces() | getBlackPieces();
+
+  // Rook + Queen
+  uint64_t potentialRookLocations = getRookAttacks(square, allPieces);
+  if (potentialRookLocations &
+      (byWhite ? (whiteRooks | whiteQueens) : (blackRooks | blackQueens))) {
+    return true;
+  }
+
+  // Bishop + Queen
+  uint64_t potentialBishopLocations = getBishopAttacks(square, allPieces);
+  if (potentialBishopLocations &
+      (byWhite ? (whiteBishops | whiteQueens) : (blackBishops | blackQueens))) {
+    return true;
+  }
+
+  return false;
+}
+
+bool ChessBoard::isInCheck(bool white) const {
+  uint64_t king = white ? whiteKing : blackKing;
+
+  int kingSquare = __builtin_ctzll(king);
+  bool isKingAttacked = isSquareAttacked(kingSquare, !white);
+
+  return isKingAttacked;
+}
+
+bool ChessBoard::testMove(Move &move) {
+  ChessBoard tempBoard = *this;
+  if (tempBoard.isInCheck(!tempBoard.sideToMove)) {
+    std::cout << "Move leaves king in check\n";
+    return false;
+  }
+
+  return true;
+};
+
+// TODO: implement this later
+bool ChessBoard::isCheckmate() const {}
+
+// TODO: implement this later
+bool ChessBoard::isStalemate() const {
+  if (moves.empty() || halfMoveClock >= 100)
+    return true;
+
+  return false;
 }
 
 bool ChessBoard::isMoveLegal(Move &move) {
@@ -88,6 +155,11 @@ bool ChessBoard::makeMove(Move &move) {
 
   BoardState prevState = {enPassantSquare, sideToMove,     castlingRights,
                           halfMoveClock,   fullMoveNumber, Piece::Empty};
+
+  // Check if move leaves king in check
+  if (!testMove(move)) {
+    return false;
+  }
 
   Piece movingPiece = board[move.from];
   prevState.capturedPiece = board[move.to];
@@ -682,7 +754,7 @@ void ChessBoard::display() const {
 
   // Display bitboard representation
   for (int rank = 7; rank >= 0; rank--) {
-    std::cout << 8 * (rank + 1) << " " << (rank + 1) << " ";
+    std::cout << 8 * rank << " " << (rank + 1) << " ";
     for (int file = 0; file < 8; file++) {
       int square = rank * 8 + file; // Removed (7 - file)
       uint64_t bit = 1ULL << square;

@@ -93,6 +93,32 @@ private:
   uint64_t knight_attacks[64];  /// Knight move patterns for each square
   uint64_t pawn_attacks[2][64]; /// Pawn attacks for each color/square
   uint64_t king_attacks[64];
+
+  /**
+   * Checks if specified square is attacked by any enemy pieces
+   *
+   * @param square to check for attacks
+   * @param byWhite True to check for attacks by white pieces
+   * @return true if square is attacked
+   */
+  bool isSquareAttacked(int square, bool byWhite) const;
+
+  /**
+   * Checks if a side's king is in check
+   *
+   * @param white True to check white king, false for black
+   * @return true if king is in check
+   */
+  bool isInCheck(bool white) const;
+
+  /**
+   * Tests if a move would leave king in check
+   *
+   * @param move Move to check
+   * @return true if move is legal with checks
+   */
+  bool testMove(Move &move);
+
   /**
    * Validates consistency between bitboard and 8x8 array representations.
    *
@@ -175,6 +201,20 @@ public:
    * Initializes attack tables and resets game state.
    */
   ChessBoard();
+
+  /**
+   * Checks if current position is a checkmate or stalemate
+   *
+   * @return true if game is over
+   */
+  bool isCheckmate() const;
+
+  /**
+   * Checks if current position is a stalemate
+   *
+   * @return true if game is a stalemate
+   */
+  bool isStalemate() const;
 
   /**
    * Constructs a chess board from a given FEN string.
