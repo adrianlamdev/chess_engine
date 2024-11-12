@@ -1,6 +1,7 @@
 #include "magics.h"
 #include <cstdint>
 #include <iostream>
+#include <sys/types.h>
 
 const uint64_t BISHOP_MAGICS[64] = {
     0x40040844404084ULL,   0x2004208a004208ULL,   0x10190041080202ULL,
@@ -51,6 +52,7 @@ const uint64_t ROOK_MAGICS[64] = {
     0x1004081002402ULL};
 
 uint64_t ROOK_ATTACKS[64][4096];
+uint64_t BISHOP_ATTACKS[64][512];
 
 struct Magic {
   uint64_t mask;
@@ -63,10 +65,21 @@ uint64_t getBishopMask(int square) {
   int file = square % 8;
   uint64_t mask = 0;
 
-  mask ^= 1ULL << square;
+  mask ^= 1ULL << (rank * 8 + (7 - file)); // remove own square
 
   return mask;
 }
+
+uint64_t getBishopAttacks(int square, uint64_t blockers) {
+  uint64_t mask = getBishopMask(square);
+  uint64_t relevantBlockers = blockers & mask;
+  uint64_t magic = BISHOP_MAGICS[square];
+
+  int shift = 64 - __builtin_popcountll(mask);
+  int index = (blockers * magic) >> shift;
+
+  return BISHOP_ATTACKS[square][index];
+};
 
 uint64_t getRookMask(int square) {
   int rank = square / 8;
