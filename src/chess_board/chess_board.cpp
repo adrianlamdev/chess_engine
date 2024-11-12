@@ -8,6 +8,248 @@ ChessBoard::ChessBoard() {
   reset();
 }
 
+bool ChessBoard::isMoveLegal(Move &move) {
+  Piece movingPiece = board[move.from];
+
+  std::cout << "Checking move from " << (int)move.from << " to " << (int)move.to
+            << "\n";
+  std::cout << "Moving piece: " << int(movingPiece) << "\n";
+
+  if (movingPiece == Piece::Empty) {
+    std::cout << "Empty square selected\n";
+    return false;
+  }
+
+  bool isWhitePiece = movingPiece <= Piece::WhiteKing;
+  std::cout << "Is white piece: " << isWhitePiece << "\n";
+
+  if (sideToMove == isWhitePiece) {
+    std::cout << "Wrong side to move\n";
+    return false;
+  }
+
+  // get all legal moves for the piece
+  moves.clear();
+  uint64_t ownPieces = isWhitePiece ? getWhitePieces() : getBlackPieces();
+  uint64_t enemyPieces = isWhitePiece ? getBlackPieces() : getWhitePieces();
+  uint64_t fromBB = 1ULL << move.from;
+
+  // check if the move is in the list of legal moves depending on piece
+  switch (movingPiece) {
+  case Piece::WhitePawn:
+  case Piece::BlackPawn:
+    generatePawnMoves(isWhitePiece ? 0 : 1, fromBB, ownPieces, enemyPieces);
+    break;
+  case Piece::WhiteKing:
+  case Piece::BlackKing:
+    generateKingMoves(fromBB, ownPieces, enemyPieces);
+    break;
+  case Piece::WhiteKnight:
+  case Piece::BlackKnight:
+    generateKnightMoves(fromBB, ownPieces, enemyPieces);
+    break;
+  case Piece::WhiteBishop:
+  case Piece::BlackBishop:
+    generateBishopMoves(fromBB, ownPieces, enemyPieces);
+    break;
+  case Piece::WhiteRook:
+  case Piece::BlackRook:
+    generateRookMoves(fromBB, ownPieces, enemyPieces);
+    break;
+  case Piece::WhiteQueen:
+  case Piece::BlackQueen:
+    generateQueenMoves(fromBB, ownPieces, enemyPieces);
+    break;
+  default:
+    return false;
+  }
+
+  // validate the move
+  std::cout << "Generated " << moves.size() << " moves\n";
+  for (const Move &m : moves) {
+    std::cout << "Possible move: " << (int)m.from << " to " << (int)m.to
+              << "\n";
+    if (m.from == move.from && m.to == move.to) {
+      std::cout << "Found matching move!\n";
+      return true;
+    }
+  }
+
+  std::cout << "No matching move found\n";
+
+  return false;
+}
+
+bool ChessBoard::makeMove(Move &move) {
+  if (!isMoveLegal(move)) {
+    std::cout << "Illegal move\n";
+    return false;
+  }
+
+  BoardState prevState = {enPassantSquare, sideToMove,     castlingRights,
+                          halfMoveClock,   fullMoveNumber, Piece::Empty};
+
+  Piece movingPiece = board[move.from];
+  prevState.capturedPiece = board[move.to];
+
+  uint64_t toBB = 1ULL << move.to;
+  uint64_t fromBB = 1ULL << move.from;
+
+  if (prevState.capturedPiece != Piece::Empty) {
+    switch (prevState.capturedPiece) {
+    case Piece::Empty:
+      return false;
+    case Piece::WhitePawn:
+      whitePawns &= ~toBB;
+      break;
+    case Piece::WhiteKnight:
+      whiteKnights &= ~toBB;
+      break;
+    case Piece::WhiteBishop:
+      whiteBishops &= ~toBB;
+      break;
+    case Piece::WhiteRook:
+      whiteRooks &= ~toBB;
+      break;
+    case Piece::WhiteQueen:
+      whiteQueens &= ~toBB;
+      break;
+    case Piece::WhiteKing:
+      whiteKing &= ~toBB;
+      break;
+    case Piece::BlackPawn:
+      blackPawns &= ~toBB;
+      break;
+    case Piece::BlackKnight:
+      blackKnights &= ~toBB;
+      break;
+    case Piece::BlackBishop:
+      blackBishops &= ~toBB;
+      break;
+    case Piece::BlackRook:
+      blackRooks &= ~toBB;
+    case Piece::BlackQueen:
+      blackQueens &= ~toBB;
+      break;
+    case Piece::BlackKing:
+      blackKing &= ~toBB;
+      break;
+    }
+  }
+
+  halfMoveClock++;
+  if (prevState.capturedPiece != Piece::Empty ||
+      movingPiece == Piece::WhitePawn || movingPiece == Piece::BlackPawn) {
+    halfMoveClock = 0;
+  }
+
+  if (sideToMove) {
+    fullMoveNumber++;
+  }
+
+  switch (movingPiece) {
+  case Piece::Empty:
+    return false;
+  case Piece::WhitePawn:
+    whitePawns ^= fromBB; // Remove from source square
+    whitePawns |= toBB;   // Add to destination square
+    break;
+  case Piece::WhiteKnight:
+    whiteKnights ^= fromBB;
+    whiteKnights |= toBB;
+    break;
+  case Piece::WhiteBishop:
+    whiteBishops ^= fromBB;
+    whiteBishops |= toBB;
+    break;
+  case Piece::WhiteRook:
+    whiteRooks ^= fromBB;
+    whiteRooks |= toBB;
+    if (move.from == 0)
+      castlingRights.erase(castlingRights.find('Q'));
+    if (move.from == 7)
+      castlingRights.erase(castlingRights.find('K'));
+    break;
+  case Piece::WhiteQueen:
+    whiteQueens ^= fromBB;
+    whiteQueens |= toBB;
+    break;
+  case Piece::WhiteKing:
+    whiteKing ^= fromBB;
+    whiteKing |= toBB;
+    // TODO: Handle castling
+    break;
+  case Piece::BlackPawn:
+    blackPawns ^= fromBB;
+    blackPawns |= toBB;
+    break;
+  case Piece::BlackKnight:
+    blackKnights ^= fromBB;
+    blackKnights |= toBB;
+    break;
+  case Piece::BlackBishop:
+    blackBishops ^= fromBB;
+    blackBishops |= toBB;
+    break;
+  case Piece::BlackRook:
+    blackRooks ^= fromBB;
+    blackRooks |= toBB;
+    if (move.from == 56)
+      castlingRights.erase(castlingRights.find('q'));
+    if (move.from == 63)
+      castlingRights.erase(castlingRights.find('k'));
+    break;
+  case Piece::BlackQueen:
+    blackQueens ^= fromBB;
+    blackQueens |= toBB;
+    break;
+  case Piece::BlackKing:
+    blackKing ^= fromBB;
+    blackKing |= toBB;
+
+    // TODO: Handle castling
+    break;
+  }
+
+  board[move.to] = board[move.from];
+  board[move.from] = Piece::Empty;
+
+  // reset en passant
+  enPassantSquare = 0xFF;
+
+  // Handle pawn double push
+  if ((movingPiece == Piece::WhitePawn && move.from / 8 == 1 &&
+       move.to / 8 == 3) ||
+      (movingPiece == Piece::BlackPawn && move.from / 8 == 6 &&
+       move.to / 8 == 4)) {
+    enPassantSquare = (move.from + move.to) / 2;
+  }
+
+  sideToMove = !sideToMove;
+
+  stateHistory.push_back(prevState);
+
+  return true;
+};
+
+void ChessBoard::unmakeMove() {
+  if (stateHistory.empty())
+    return;
+
+  BoardState prevState = stateHistory.back();
+  stateHistory.pop_back();
+
+  enPassantSquare = prevState.enPassantSquare;
+  sideToMove = prevState.sideToMove;
+  castlingRights = prevState.castlingRights;
+  halfMoveClock = prevState.halfMoveClock;
+  fullMoveNumber = prevState.fullMoveNumber;
+
+  // TODO: Restore piece positions
+  // Requires storing the move that was made
+  // Might need to extend the BoardState to include the move
+}
+
 void ChessBoard::initAttacks() {
   initKingAttacks();
   initKnightAttacks();
@@ -432,15 +674,15 @@ uint64_t ChessBoard::getBlackPieces() const {
 }
 
 void ChessBoard::display() const {
-  std::cout << "Side to move: " << (sideToMove == 0 ? "White" : "Black")
-            << std::endl;
+  std::cout << "Side to move: " << (sideToMove == 0 ? "White" : "Black") << " "
+            << sideToMove << std::endl;
   std::cout << "Castling rights: " << castlingRights << std::endl;
   std::cout << "Half move clock: " << halfMoveClock << std::endl;
   std::cout << "Full move number: " << fullMoveNumber << std::endl;
 
   // Display bitboard representation
   for (int rank = 7; rank >= 0; rank--) {
-    std::cout << (rank + 1) << " ";
+    std::cout << 8 * (rank + 1) << " " << (rank + 1) << " ";
     for (int file = 0; file < 8; file++) {
       int square = rank * 8 + file; // Removed (7 - file)
       uint64_t bit = 1ULL << square;
@@ -473,17 +715,17 @@ void ChessBoard::display() const {
     }
     std::cout << '\n';
   }
-  std::cout << "  a b c d e f g h" << std::endl;
+  std::cout << "     a b c d e f g h" << std::endl;
 
   // Display raw 8x8 values
-  std::cout << "\n8x8 values:\n";
-  for (int rank = 7; rank >= 0; rank--) {
-    std::cout << (rank + 1) << " ";
-    for (int file = 0; file < 8; file++) {
-      int square = rank * 8 + file; // Removed (7 - file)
-      std::cout << int(board[square]) << "\t";
-    }
-    std::cout << '\n';
-  }
-  std::cout << "  a b c d e f g h" << std::endl;
+  /*std::cout << "\n8x8 values:\n";*/
+  /*for (int rank = 7; rank >= 0; rank--) {*/
+  /*  std::cout << (rank + 1) << " ";*/
+  /*  for (int file = 0; file < 8; file++) {*/
+  /*    int square = rank * 8 + file; // Removed (7 - file)*/
+  /*    std::cout << int(board[square]) << "\t";*/
+  /*  }*/
+  /*  std::cout << '\n';*/
+  /*}*/
+  /*std::cout << "  a b c d e f g h" << std::endl;*/
 }

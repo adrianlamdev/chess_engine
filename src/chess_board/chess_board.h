@@ -38,6 +38,19 @@ enum class Piece : uint8_t {
   BlackKing = 14
 };
 
+/*
+ * Represents the full game state including castling rights, en passant square,
+ * and half/full move counters.
+ */
+struct BoardState {
+  uint8_t enPassantSquare;
+  bool sideToMove;
+  std::string castlingRights;
+  uint8_t halfMoveClock;
+  uint16_t fullMoveNumber;
+  Piece capturedPiece;
+};
+
 /**
  * Represents a chess board using both bitboard and 8x8 array representations.
  * Maintains move generation lookup tables and game state.
@@ -50,6 +63,8 @@ enum class Piece : uint8_t {
  */
 class ChessBoard {
 private:
+  std::vector<BoardState> stateHistory;
+
   // Bitboard representation - one 64-bit integer per piece type
   uint64_t whitePawns;
   uint64_t whiteKnights;
@@ -80,9 +95,10 @@ private:
   uint64_t king_attacks[64];
   /**
    * Validates consistency between bitboard and 8x8 array representations.
-   * TODO: Implement validation logic
+   *
+   * @param Move to evaluate
    */
-  void isValid();
+  bool isMoveLegal(Move &move);
 
   /**
    * Generates pseudo-legal knight moves for the given knights.
@@ -159,6 +175,21 @@ public:
    * Initializes attack tables and resets game state.
    */
   ChessBoard();
+
+  /**
+   * Constructs a chess board from a given FEN string.
+   * Initializes attack tables and resets game state.
+   *
+   * @param move Move to make
+   */
+  bool makeMove(Move &move);
+
+  /**
+   * Undoes the last move made on the board.
+   * Restores the board state to the previous position
+   *
+   */
+  void unmakeMove();
 
   /**
    * Resets the board to the standard starting position.
