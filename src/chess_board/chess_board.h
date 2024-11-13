@@ -49,6 +49,7 @@ struct BoardState {
   uint8_t halfMoveClock;
   uint16_t fullMoveNumber;
   Piece capturedPiece;
+  std::vector<uint64_t> positions;
 };
 
 /**
@@ -84,6 +85,7 @@ private:
   std::string castlingRights; /// "KQkq" format - uppercase for white
   uint8_t halfMoveClock;      /// Counts moves for 50-move rule
   uint16_t fullMoveNumber;    /// Incremented after black's move
+  std::vector<uint64_t> positions;
 
   std::array<Piece, 64> board; /// 8x8 array representation
   std::vector<Move> moves;     /// Legal moves in current position
@@ -200,6 +202,8 @@ private:
   bool hasInsufficientMaterial() const;
 
 public:
+  bool doMove(Move &move);
+
   bool sideToMove; /// false = white, true = black
 
   /**
@@ -246,8 +250,10 @@ public:
   /**
    * Displays the current board state.
    * Shows ASCII board and raw 8x8 array values for debugging.
+   *
+   * @param debug True to show game state variables
    */
-  void display() const;
+  void display(bool debug) const;
 
   /**
    * Gets combined bitboard of all white pieces.
@@ -297,7 +303,7 @@ public:
    * Generates all pseudo-legal moves in current position.
    * Updates internal moves vector.
    */
-  void generateMoves();
+  std::vector<Move> generateMoves();
 
   void displayBitboard(uint64_t bitboard) const;
 };
