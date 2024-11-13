@@ -201,6 +201,8 @@ private:
    */
   bool hasInsufficientMaterial() const;
 
+  bool isPathClear(int from, int to, uint64_t allPieces) const;
+
 public:
   bool doMove(Move &move);
 

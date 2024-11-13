@@ -9,7 +9,10 @@ int main() {
 
   if (choice == 1) {
     Perft perft = Perft();
-    std::cout << perft.perftDebug(2) << std::endl;
+    int depth;
+    std::cout << "Enter depth: " << std::endl;
+    std::cin >> depth;
+    perft.perft(depth, true);
     return 0;
   } else {
 

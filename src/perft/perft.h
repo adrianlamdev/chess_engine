@@ -14,18 +14,10 @@ public:
    * Calculates the number of leaf nodes for the given depth.
    *
    * @param depth Depth to calculate perft for
+   * @param isRoot True if this is the root call
    * @return Number of leaf nodes for the given depth
    */
-  uint64_t perft(int depth);
-
-  /**
-   * Calculates the number of leaf nodes for the given depth, and prints the
-   * number of nodes at each depth.
-   *
-   * @param depth Depth to calculate perft for
-   * @return Number of leaf nodes for the given depth
-   */
-  uint64_t perftDebug(uint8_t depth);
+  uint64_t perft(int depth, bool isRoot = true);
 };
 
 #endif

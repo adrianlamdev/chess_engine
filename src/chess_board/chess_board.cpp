@@ -559,54 +559,87 @@ void ChessBoard::displayKnightAttacks(int square) const {
   std::cout << "  a b c d e f g h" << std::endl;
 }
 
-void ChessBoard::generateBishopMoves(uint64_t bishops, uint64_t ownPieces,
-                                     uint64_t enemyPieces) {
-  while (bishops) {
-    int square = __builtin_ctzll(bishops);
-    uint64_t attacks = getBishopAttacks(square, ownPieces | enemyPieces);
-    attacks &= ~ownPieces; // Remove squares occupied by own pieces
+bool ChessBoard::isPathClear(int from, int to, uint64_t allPieces) const {
+  int fromRank = from / 8;
+  int fromFile = from % 8;
+  int toRank = to / 8;
+  int toFile = to % 8;
 
-    while (attacks) {
-      int to = __builtin_ctzll(attacks);
-      moves.push_back(Move{(uint8_t)square, (uint8_t)to});
-      attacks &= attacks - 1;
+  // Determine the direction of movement
+  int rankStep = (toRank == fromRank) ? 0 : (toRank > fromRank) ? 1 : -1;
+  int fileStep = (toFile == fromFile) ? 0 : (toFile > fromFile) ? 1 : -1;
+
+  int currentRank = fromRank + rankStep;
+  int currentFile = fromFile + fileStep;
+
+  // Check each square between from and to (exclusive)
+  while (currentRank != toRank || currentFile != toFile) {
+    int currentSquare = currentRank * 8 + currentFile;
+    if (allPieces & (1ULL << currentSquare)) {
+      return false;
     }
-
-    bishops &= bishops - 1;
+    currentRank += rankStep;
+    currentFile += fileStep;
   }
+  return true;
 }
 
 void ChessBoard::generateRookMoves(uint64_t rooks, uint64_t ownPieces,
                                    uint64_t enemyPieces) {
+  uint64_t allPieces = ownPieces | enemyPieces;
   while (rooks) {
-    int square = __builtin_ctzll(rooks);
-    uint64_t attacks = getRookAttacks(square, ownPieces | enemyPieces);
-    attacks &= ~ownPieces; // Remove squares occupied by own pieces
+    int from = __builtin_ctzll(rooks);
+    uint64_t potentialMoves = getRookAttacks(from, allPieces);
+    potentialMoves &= ~ownPieces; // Remove squares occupied by own pieces
 
-    while (attacks) {
-      int to = __builtin_ctzll(attacks);
-      moves.push_back(Move{(uint8_t)square, (uint8_t)to});
-      attacks &= attacks - 1;
+    uint64_t validMoves = potentialMoves;
+    while (validMoves) {
+      int to = __builtin_ctzll(validMoves);
+      if (isPathClear(from, to, allPieces)) {
+        moves.push_back(Move{(uint8_t)from, (uint8_t)to});
+      }
+      validMoves &= validMoves - 1;
     }
-
     rooks &= rooks - 1;
+  }
+}
+
+void ChessBoard::generateBishopMoves(uint64_t bishops, uint64_t ownPieces,
+                                     uint64_t enemyPieces) {
+  uint64_t allPieces = ownPieces | enemyPieces;
+  while (bishops) {
+    int from = __builtin_ctzll(bishops);
+    uint64_t potentialMoves = getBishopAttacks(from, allPieces);
+    potentialMoves &= ~ownPieces; // Remove squares occupied by own pieces
+
+    uint64_t validMoves = potentialMoves;
+    while (validMoves) {
+      int to = __builtin_ctzll(validMoves);
+      if (isPathClear(from, to, allPieces)) {
+        moves.push_back(Move{(uint8_t)from, (uint8_t)to});
+      }
+      validMoves &= validMoves - 1;
+    }
+    bishops &= bishops - 1;
   }
 }
 
 void ChessBoard::generateQueenMoves(uint64_t queens, uint64_t ownPieces,
                                     uint64_t enemyPieces) {
+  uint64_t allPieces = ownPieces | enemyPieces;
   while (queens) {
-    int square = __builtin_ctzll(queens);
-    uint64_t attacks = getRookAttacks(square, ownPieces | enemyPieces) |
-                       getBishopAttacks(square, ownPieces | enemyPieces);
-    attacks &= ~ownPieces;
+    int from = __builtin_ctzll(queens);
+    uint64_t potentialMoves = getQueenAttacks(from, allPieces);
+    potentialMoves &= ~ownPieces; // Remove squares occupied by own pieces
 
-    while (attacks) {
-      int to = __builtin_ctzll(attacks);
-      moves.push_back(Move{(uint8_t)square, (uint8_t)to});
-      attacks &= attacks - 1;
+    uint64_t validMoves = potentialMoves;
+    while (validMoves) {
+      int to = __builtin_ctzll(validMoves);
+      if (isPathClear(from, to, allPieces)) {
+        moves.push_back(Move{(uint8_t)from, (uint8_t)to});
+      }
+      validMoves &= validMoves - 1;
     }
-
     queens &= queens - 1;
   }
 }
